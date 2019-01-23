@@ -3,9 +3,9 @@ from datetime import timedelta
 import gzip
 import glob
 import os
+import shutil
 
 import requests
-import pandas as pd
 
 
 # https://public.bitmex.com/?prefix=data/trade/
@@ -41,11 +41,18 @@ def scrape(year):
 
 def merge(year):
     print("Generating CSV for {}".format(year))
-    files = glob.glob("{}*".format(year))
-    combined_csv = pd.concat([pd.read_csv(f) for f in files])
-    combined_csv.to_csv("{}.csv".format(year), index=False)
+    files = sorted(glob.glob("{}*".format(year)))
+    with open("{}.csv".format(year), 'wb') as out:
+        first = True
+        for f in files:
+            with open(f, 'rb') as fp:
+                if first:
+                    fp.readline()
+                    first = False
+                shutil.copyfileobj(fp, out)
     for f in files:
         os.unlink(f)
+
 
 if __name__ == '__main__':
     years = [2014, 2015, 2016, 2017, 2018, 2019]
