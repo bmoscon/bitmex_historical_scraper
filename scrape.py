@@ -19,7 +19,7 @@ def scrape(year):
     else:
         date = dt(year, 1, 1)
     
-    end_date = min(dt(year, 12, 31), dt.today())
+    end_date = min(dt(year, 12, 31), dt.today() - timedelta(days=1))
     
 
     while date <= end_date:
