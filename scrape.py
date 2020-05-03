@@ -1,10 +1,10 @@
 from datetime import datetime as dt
 from datetime import timedelta
+import argparse
 import gzip
 import glob
 import os
 import shutil
-import sys
 import time
 
 import requests
@@ -14,10 +14,10 @@ import requests
 endpoint = 'https://s3-eu-west-1.amazonaws.com/public.bitmex.com/data/trade/{}.csv.gz'
 
 
-def scrape(year, date):
+def scrape(year, date, end):
     end_date = min(dt(year, 12, 31), dt.today() - timedelta(days=1))
 
-    while date <= end_date:
+    while date <= end_date and date <= end:
         date_str = date.strftime('%Y%m%d')
         print("Processing {}...".format(date))
         count = 0
@@ -48,42 +48,32 @@ def scrape(year, date):
 def merge(year):
     print("Generating CSV for {}".format(year))
     files = sorted(glob.glob("{}*".format(year)))
+    first = True
     with open("{}.csv".format(year), 'wb') as out:
-        first = True
         for f in files:
             with open(f, 'rb') as fp:
-                if first:
+                if first is False:
                     fp.readline()
-                    first = False
+                first = False
                 shutil.copyfileobj(fp, out)
     for f in files:
         os.unlink(f)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 2:
-        # if arg is supplied must be in format YYYYMMDD
-        # will attempt to remove that file, if exists
-        # in case data is incomplete
-        year = int(sys.argv[1][:4])
-        month = int(sys.argv[1][4:6])
-        day = int(sys.argv[1][6:])
-        start = dt(year, month, day)
-        years = list(range(year, dt.now().year + 1))
+    parser = argparse.ArgumentParser(description='BitMex historical data scraper. Scrapes files into single year CSVs')
+    parser.add_argument('--start', default="20141122", help='start date, in YYYYMMDD format. Default is 2014-11-22, the earliest data date for BitMex')
+    parser.add_argument('--end', default=None, help='end date, in YYYYMMDD format. Default is yesterday')
+    args = parser.parse_args()
 
-        try:
-            os.unlink(sys.argv[1])
-        except FileNotFoundError:
-            pass
+    start = dt.strptime(args.start, '%Y%m%d')
+    end = dt.strptime(args.end, '%Y%m%d') if args.end else dt.utcnow()
 
-    else:
-        # 2014-11-12 is the first day of data
-        start = dt(2014, 11, 22)
-        years = list(range(2014, dt.now().year + 1))
+    years = list(range(start.year, end.year + 1))
 
     starts = [dt(year, 1, 1) for year in years]
     starts[0] = start
 
     for year, start in zip(years, starts):
-        scrape(year, start)
+        scrape(year, start, end)
         merge(year)
