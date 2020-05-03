@@ -9,4 +9,7 @@ Bitmex no longer offers historical trade data on their REST API. They do have th
 
 
 ### Usage
-`python scrape.py` or `python scrape.py YYYYMMDD` to specify a start date, where YYYY is the year, MM is the month and DD is the day. If no date is supplied, will scrape all available data. 
+* `python scrape.py` - Scrape all available data
+* `python scrape.py --start YYYYMMDD` - Scrape data from start date through yesterday
+* `python scrape.py --start YYYYMMDD --end YYYYMMDD` - Scrape data from start date through end date (inclusive)
+* `python scrape.py --end YYYYMMDD` - Scrape data from start of data through end date
